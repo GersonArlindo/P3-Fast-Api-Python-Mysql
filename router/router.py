@@ -1,7 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
+from starlette.status import HTTP_201_CREATED
 from schema.user_schema import UserSchema
 from config.db import conn
 from model.users import users
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 user = APIRouter()
 
@@ -9,13 +12,11 @@ user = APIRouter()
 def root():
     return {"message": " Hi, I am FastApi with router" }
 
-@user.post("/api/user")
+@user.post("/api/user", status_code=HTTP_201_CREATED)
 def create_user(data_user: UserSchema):
-    try:
         new_user = data_user.dict()
-        print(new_user)
+        new_user['user_pass'] = generate_password_hash(data_user.user_pass, "pbkdf2:sha256:30", 30)
         conn.execute(users.insert().values(new_user))
         conn.commit()
-        return "Success"
-    except Exception as e:
-        return f"Error: {str(e)}"
+        return Response(status_code=HTTP_201_CREATED)
+
